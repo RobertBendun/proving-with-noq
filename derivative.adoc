@@ -12,7 +12,27 @@ Seeing that this proof is quite simple I wondered if it would be easy to transla
 This post is written in https://en.wikipedia.org/wiki/Literate_programming[literate programming] style, so you can extract code from it and run it without modification in Noq.
 See https://github.com/RobertBendun/proving-with-noq#proving-with-noq[associated git repository] for details.
 
-== Noq quick introduction
+== Noq
+
+I really like Noq.
+Despite beeing self-proclaimed math-enjoyer I didn't like many of math classes in my education.
+Teachers and classmates when doing algebra on a blackboard would always skip some steps and take some shortcuts to keep equations on the board, which made them harder to reason about - you have to rediscover what transformations have taken place since they were always _implicit_.
+
+That's where Noq comes in - by beeing the tool that you can express symbolic transformations in, each step of proof or calculation is explicit - Noq doesn't infer anything, only matches the patterns that you have provided.
+I am really interested in how it can be used in math education, maybe as a suplementary measure.
+
+=== Quick introduction
+
+Primary construct in Noq are _rules_: transformations that can pattern match on currently held equation.
+For example rule `f(A + B) = f(A) + f(B)` will transform function of sum to sum of functions.
+Note the different case - uppercase variables are matched, lowercase symbols stay.
+Rules can be named, using `name +::+ rule` syntax.
+
+Rules can be used in _shaping_, a process of equation transformation. Shaping is another syntax for rule, but with justification attach to it (replacing `= rhs` part from `lhs = rhs` rule): `f(A + B) { ... }`.
+Inside curly braces we pattern match using rules. Pattern matches are applied using strategies, for example `0` replaces first match and `all` replaces all matches.
+Rules can be applied with reverse by using `!`.
+
+For better documentation look in https://github.com/tsoding/Noq[Noq repository], now let's get back to the topic.
 
 == Derivatives
 
@@ -39,13 +59,19 @@ First we need some prior math knowladge:
 
 [source]
 ----
-double :: X + X = 2*X
-exponents_sum :: X^(A + B) = X^A*X^B
-mult_assoc :: (A*B)*C = A*(B*C)
+// Peano axioms:
+refl :: X == X = true
+trans :: and(A == B, A == C) = B == C
+
+// and derivation from them:
+mult :: (N + 1)*X = N*X + X
 mult_comm :: X*Y = Y*X
+mult_assoc :: (A*B)*C = A*(B*C)
 mult_id :: X*1 = X
 mult_zero :: 0*X = 0
-refl :: X == X = true
+
+double :: X + X = 2*X
+exponents_sum :: X^(A + B) = X^A*X^B
 ----
 
 The rules above are mostly in Noq standard library, but to have post self-contained we assume that they are correct and skip their construction from Peano axioms.
@@ -55,26 +81,28 @@ We will prove power rule using induction.
 
 ==== Base case
 
+To solve the base case we will utilize the fact, that only for `X = 0` the equation `X == A*X` is true.
+
 [source]
 ----
 derivative_power_rule_base :: d(X^0) == 0*d(X) {
     mult_zero | 0
     X^0 = 1 | 0
-    X == Y = and(X == X, X == Y) | 0
-    1 = 1*1 | 1
+    fork | 0
+    mult_id |! 8
     derivative_mult | 0
     mult_comm | 1
     double | 0
     mult_id | 0
-    X == 2*X = X == 0 | 0
-    and(A == B, A == C) = B == C | 0
+    X == A*X = X == 0 | 0
+    trans | 0
     refl | 0
 }
 ----
 
 One interesing fragment from this proof that is required to be fully contained in the language (and not for example in comments) is usage of `and` to store previous knowladge.
 As can be https://youtu.be/xuxsjWWg288?si=_m82FiS4Su_Z8lYp&t=435[seen in the video], we use previous expression to infer meaning to a new one.
-In Noq, as in most https://en.wikipedia.org/wiki/Computer_language[computer languages], we must store prior knowladge somewhere to use it later. In this case we somewhat fork our equality to two, which allows us to join later.
+In Noq, as in most https://en.wikipedia.org/wiki/Computer_language[computer languages], we must store prior knowladge somewhere to use it later. In this case we somewhat fork our equality to two, which allows us to join (with `trans`) later.
 
 ==== Inductive step
 
@@ -140,7 +168,7 @@ derivative_power_rule_ind :: d(X^(n + 1)) == (n + 1)*X^n {
     exponents_sum |! 0
     (X - A) + A = X | 0
     mult_id | 0
-    N*X + X = (N + 1)*X | 0
+    mult |! 0
     refl | 0
 }
 ----
