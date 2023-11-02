@@ -1,9 +1,41 @@
-= Proving with Noq: derivatives
+= Proving with Noq: Derivatives
+:toc:
+:date: 2023-11-02
 
-Post inspired by https://www.youtube.com/watch?v=xuxsjWWg288
-using https://github.com/tsoding/Noq (commit 178f896).
+== Why?
 
-Inductive proof technique realisation in Noq from: https://www.youtube.com/watch?v=9mk19dpK9lM
+I recently watched https://www.youtube.com/watch?v=xuxsjWWg288[video by Michael Penn],
+when he showed how to define derivatives on polynomials as only object that satisfies certain properties.
+
+Seeing that this proof is quite simple I wondered if it would be easy to translate to https://github.com/tsoding/Noq[Noq], which is an symbolic expression transformer, sort-of an alternative to writing proofs with pen and paper.
+
+This post is written in https://en.wikipedia.org/wiki/Literate_programming[literate programming] style, so you can extract code from it and run it without modification in Noq.
+See https://github.com/RobertBendun/proving-with-noq#proving-with-noq[associated git repository] for details.
+
+== Noq quick introduction
+
+== Derivatives
+
+We claim that the only linear map from polynomials to polynomials named `d`
+that has these two properties:
+[source]
+----
+derivative_constant :: d(X) = 1
+derivative_mult :: d(X*Y) = d(X)*Y + X*d(Y)
+----
+is derivative.
+As it will be shown below, this is enough to have working derivatives for polynomials.
+
+=== Power rule proof
+
+The only proof that we need to do is the power rule (derivative of variable to some constant), defiened as:
+
+[source]
+----
+derivative_power_rule :: d(X^N) = N*X^(N - 1)
+----
+
+First we need some prior math knowladge:
 
 [source]
 ----
@@ -16,31 +48,12 @@ mult_zero :: 0*X = 0
 refl :: X == X = true
 ----
 
-We claim that the only linear map from polynomials to polynomials named `d`
-that has these two properties:
-[source]
-----
-derivative_constant :: d(X) = 1
-derivative_mult :: d(X*Y) = d(X)*Y + X*d(Y)
-----
-is derivative.
+The rules above are mostly in Noq standard library, but to have post self-contained we assume that they are correct and skip their construction from Peano axioms.
 
-Since we are talking about polynomials we need only power rule (other properties are covered by linear map claim):
-
-[source]
-----
-derivative_power_rule :: d(X^N) = N*X^(N - 1)
-----
 
 We will prove power rule using induction.
-We construct induction hypothesis:
 
-[source]
-----
-derivative_power_rule_hyp :: d(X^n) = n*X^(n - 1)
-----
-
-== Base case
+==== Base case
 
 [source]
 ----
@@ -59,7 +72,60 @@ derivative_power_rule_base :: d(X^0) == 0*d(X) {
 }
 ----
 
-== Inductive case
+One interesing fragment from this proof that is required to be fully contained in the language (and not for example in comments) is usage of `and` to store previous knowladge.
+As can be https://youtu.be/xuxsjWWg288?si=_m82FiS4Su_Z8lYp&t=435[seen in the video], we use previous expression to infer meaning to a new one.
+In Noq, as in most https://en.wikipedia.org/wiki/Computer_language[computer languages], we must store prior knowladge somewhere to use it later. In this case we somewhat fork our equality to two, which allows us to join later.
+
+==== Inductive step
+
+We construct induction hypothesis:
+
+[source]
+----
+derivative_power_rule_hyp :: d(X^n) = n*X^(n - 1)
+----
+
+It would be tempting to use `derivative_power_rule` directly, instead of hypothesis.
+In fact we can, but we must be very carefull to match only what we can match (limit ourself to only using the hypothesis and not any occurance of this sequence of symbols).
+By expressing the hypothesis directly we have more confidence that our proof is valid.
+
+.Missing hypothesis definition gone wrong
+[%collapsible]
+====
+
+We can see how misusing rule definition as hypothesis can go wrong with simple proof of commutativity of sum identity addition.
+We are using https://en.wikipedia.org/wiki/Peano_axioms[Peano axioms].
+
+[source]
+----
+sum_id :: 0 + A = A
+sum :: s(A) + B = s(A + B)
+sum_id_comm :: A + 0 = A
+
+sum_id_comm_base :: 0 + 0 == 0 {
+    sum_id | 0
+    refl | 0
+}
+
+sum_id_comm_ind_wrong :: s(A) + 0 == s(A) {
+    sum_id_comm | 0
+    refl | 0
+}
+----
+
+We can see what went wrong - we use what we are trying to prove as fact, not our induction hypothesis.
+If we limit ourself, by constructing proper hypothesis this mistake wouldn't happen.
+
+[source]
+----
+sum_id_comm_hyp :: a + 0 = a
+sum_id_comm_ind_good :: s(a) + 0 == s(a) {
+    sum | 0
+    sum_id_comm_hyp | 0
+    refl | 0
+}
+----
+====
 
 [source]
 ----
