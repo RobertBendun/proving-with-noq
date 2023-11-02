@@ -1,0 +1,54 @@
+// Post inspired by https://www.youtube.com/watch?v=xuxsjWWg288
+// using https://github.com/tsoding/Noq
+// commit 178f896
+// Inductive proof technique realisation in Noq from: https://www.youtube.com/watch?v=9mk19dpK9lM
+double :: X + X = 2*X
+exponents_sum :: X^(A + B) = X^A*X^B
+mult_assoc :: (A*B)*C = A*(B*C)
+mult_comm :: X*Y = Y*X
+mult_id :: X*1 = X
+mult_zero :: 0*X = 0
+refl :: X == X = true
+
+// We claim that the only linear map from polynomials to polynomials named `d`
+// that has these two properties:
+derivative_constant :: d(X) = 1
+derivative_mult :: d(X*Y) = d(X)*Y + X*d(Y)
+// is derivative.
+
+// Since we are talking about polynomials we need only power rule (other properties are covered by linear map claim):
+derivative_power_rule :: d(X^N) = N*X^(N - 1)
+
+// We will prove power rule using induction. We construct induction hypothesis:
+derivative_power_rule_hyp :: d(X^n) = n*X^(n - 1)
+
+// Prove base case
+derivative_power_rule_base :: d(X^0) == 0*d(X) {
+    mult_zero | 0
+    X^0 = 1 | 0
+    X == Y = and(X == X, X == Y) | 0
+    1 = 1*1 | 1
+    derivative_mult | 0
+    mult_comm | 1
+    double | 0
+    mult_id | 0
+    X == 2*X = X == 0 | 0
+    and(A == B, A == C) = B == C | 0
+    refl | 0
+}
+
+// and prove inductive case (N+1)
+derivative_power_rule_ind :: d(X^(n + 1)) == (n + 1)*X^n {
+    exponents_sum | 0
+    derivative_mult | 0
+    X^1 = X | all
+    derivative_constant | 1
+    derivative_power_rule_hyp | 0
+    mult_assoc | 0
+    X = X^1 | 10
+    exponents_sum |! 0
+    (X - A) + A = X | 0
+    mult_id | 0
+    N*X + X = (N + 1)*X | 0
+    refl | 0
+}

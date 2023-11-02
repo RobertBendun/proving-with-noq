@@ -1,0 +1,3 @@
+[submodule "Noq"]
+	path = Noq
+	url = https://github.com/tsoding/Noq.git
