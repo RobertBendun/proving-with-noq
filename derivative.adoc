@@ -59,23 +59,49 @@ First we need some prior math knowladge:
 
 [source]
 ----
-// Peano axioms:
+// Peano axioms
 refl :: X == X = true
 trans :: and(A == B, A == C) = B == C
 
-// and derivation from them:
+// Multiplication
 mult :: (N + 1)*X = N*X + X
 mult_comm :: X*Y = Y*X
 mult_assoc :: (A*B)*C = A*(B*C)
 mult_id :: X*1 = X
 mult_zero :: 0*X = 0
-
 double :: X + X = 2*X
+
 exponents_sum :: X^(A + B) = X^A*X^B
 ----
 
-The rules above are mostly in Noq standard library, but to have post self-contained we assume that they are correct and skip their construction from Peano axioms.
+.Exponents sum proof
+[%collapsible]
+====
+[source]
+----
+exponents_sum_base :: X^(A + 0) == X^A*X^0 {
+    X^0 = 1 | 0
+    mult_id | 0
+    A + 0 = A | 0
+    refl | 0
+}
 
+exponents_sum_hyp :: X^(A + b) = X^A*X^b
+sum_assoc :: (A + B) + C = A + (B + C)
+exp :: X^(A + 1) = X^A*X
+
+exponents_sum_ind :: X^(A + (b + 1)) == X^A*X^(b + 1) {
+    exp | 0
+    mult_assoc |! 0
+    exponents_sum_hyp |! 0
+    exp |! 0
+    sum_assoc | 0
+    refl | 0
+}
+----
+====
+
+The rules above are mostly in Noq standard library, but to have post self-contained we assume that they are correct and skip their construction from Peano axioms.
 
 We will prove power rule using induction.
 
@@ -88,7 +114,7 @@ To solve the base case we will utilize the fact, that only for `X = 0` the equat
 derivative_power_rule_base :: d(X^0) == 0*d(X) {
     mult_zero | 0
     X^0 = 1 | 0
-    fork | 0
+    X == Y = and(X == X, X == Y) | 0
     mult_id |! 8
     derivative_mult | 0
     mult_comm | 1
@@ -103,6 +129,19 @@ derivative_power_rule_base :: d(X^0) == 0*d(X) {
 One interesing fragment from this proof that is required to be fully contained in the language (and not for example in comments) is usage of `and` to store previous knowladge.
 As can be https://youtu.be/xuxsjWWg288?si=_m82FiS4Su_Z8lYp&t=435[seen in the video], we use previous expression to infer meaning to a new one.
 In Noq, as in most https://en.wikipedia.org/wiki/Computer_language[computer languages], we must store prior knowladge somewhere to use it later. In this case we somewhat fork our equality to two, which allows us to join (with `trans`) later.
+
+.Rule `X == Y = and(X == X, X == Y)`
+[%collapsible]
+====
+[source]
+----
+and_id :: and(true, X) = X
+fork :: X == Y {
+    and_id |! 0
+    refl |! 0
+}
+----
+====
 
 ==== Inductive step
 
