@@ -46,6 +46,12 @@ derivative_mult :: d(X*Y) = d(X)*Y + X*d(Y)
 is derivative.
 As it will be shown below, this is enough to have working derivatives for polynomials.
 
+[NOTE]
+====
+`derivative_constant` rule matches on any expression - Noq does not have ability to recognize type of expression (can't see difference between scalar and variable, number and expression).
+Be _careful_ when applying rules, Noq will not prevent from making invalid transformations, that are syntacticly correct.
+====
+
 === Power rule proof
 
 The only proof that we need to do is the power rule (derivative of variable to some constant), defiened as:
@@ -209,5 +215,31 @@ derivative_power_rule_ind :: d(X^(n + 1)) == (n + 1)*X^n {
     mult_id | 0
     mult |! 0
     refl | 0
+}
+----
+
+=== Random polynomial transformation
+
+To transform any polynomial we need to introduce https://en.wikipedia.org/wiki/Linear_map#Definition_and_first_consequences[linear map rules]:
+
+[source]
+----
+linear_map_addition :: F(U + V) = F(U) + F(V)
+linear_map_scalar_mult :: F(S * X) = S * F(X)
+----
+
+Then we can calculate derivative of any polynomial:
+
+[source]
+----
+random_polynomial_derivative :: d(2*x^3 + 4*x^2) {
+    linear_map_addition | 0
+    linear_map_scalar_mult | all
+    derivative_power_rule | all
+    3 - 1 = 2 | 0
+    2 - 1 = 1 | 0
+    mult_assoc |! all
+    2*3 = 6 | 0
+    4*2 = 8 | 0
 }
 ----
